@@ -1,0 +1,8 @@
+{
+  "name": "jon",
+  "age": 25,
+  "hobbies": ["fishing", "reading", "running"],
+  "enabled": true,
+  "emailVerified": false,
+  "email": null
+}
