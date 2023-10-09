@@ -255,6 +255,26 @@ func OneOf[T any](parsers ...Parser[T]) Parser[T] {
 	}
 }
 
+// RepeatWhile repeatedly applies parser p while the predicate is satisfied
+func RepeatWhile[T any](parser Parser[T], predicate func(T) bool) Parser[[]T] {
+	return func(initial State) ([]T, State, error) {
+		current := initial
+		result := make([]T, 0)
+		for current.HasRemaining() {
+			r, next, err := parser(current)
+			if err != nil {
+				return nil, current, err
+			}
+			if !predicate(r) {
+				break
+			}
+			current = next
+			result = append(result, r)
+		}
+		return result, current, nil
+	}
+}
+
 func WithLabel[T any](p Parser[T], label string) Parser[T] {
 	return func(initial State) (T, State, error) {
 		t, next, err := p(initial)

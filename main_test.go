@@ -91,6 +91,51 @@ func TestInfix(t *testing.T) {
 	mustNotParse("3+n")
 }
 
+func TestRepeatWhile_read_all(t *testing.T) {
+	parser := RepeatWhile(
+		Unpack(
+			AppendSkipping(
+				AppendKeeping(
+					StartSkipping(ConsumeWhile(IsWhitespace)),
+					GetString(ConsumeWhile(IsNotWhitespace)),
+				),
+				ConsumeWhile(IsWhitespace),
+			),
+		),
+		func(s string) bool { return true },
+	)
+
+	tokens, err := Parse(parser, "hello my dear parser combinators")
+	if err != nil {
+		t.Errorf("parser didn't parse")
+	}
+	expected := []string{"hello", "my", "dear", "parser", "combinators"}
+	if len(expected) != 5 {
+		t.Errorf("Expected %v, got %v", expected, tokens)
+	}
+}
+
+func TestRepeatWhile_read_partially(t *testing.T) {
+	parser := RepeatWhile(
+		GetString(ConsumeWhile(IsNotWhitespace)),
+		func(s string) bool { return len(s) > 0 },
+	)
+	tokens, next, err := parser(State{
+		Data:   "hello world",
+		Offset: 0,
+	})
+	if err != nil {
+		t.Errorf("parser didn't parse")
+	}
+	expectedOffset := 5
+	if next.Offset != expectedOffset {
+		t.Errorf("Expected offset %d, got %d", expectedOffset, next.Offset)
+	}
+	if len(tokens) != 1 {
+		t.Errorf("Expected [hello], got %v", tokens)
+	}
+}
+
 func Test_SepBy(t *testing.T) {
 	sep := AppendSkipping(StartSkipping(Exactly(",")), ConsumeWhile(IsWhitespace))
 	val := Between(Exactly("'"), ConsumeWhile(IsAsciiLetter), Exactly("'"))
