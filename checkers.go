@@ -23,6 +23,10 @@ func IsWhitespace(r rune) bool {
 	return r == '\t' || r == ' '
 }
 
+func IsNotWhitespace(r rune) bool {
+	return !IsWhitespace(r)
+}
+
 func IsAnyOf(allowed ...rune) func(rune) bool {
 	return func(r rune) bool {
 		for _, c := range allowed {
