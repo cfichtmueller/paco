@@ -5,6 +5,7 @@ import (
 	"strings"
 )
 
+// Parse is the main parsing function. Provide a parser and an input and receive the parsing result.
 func Parse[T any](parser Parser[T], data string) (T, error) {
 	initial := State{
 		Data:   data,
@@ -78,6 +79,7 @@ func Between[T, U, A any](p1 Parser[T], p2 Parser[A], p3 Parser[U]) Parser[A] {
 	}
 }
 
+// ConsumeIf consumes a rune if the condition holds true. If not it returns ErrNoMatch
 func ConsumeIf(condition func(rune) bool) Parser[Empty] {
 	return func(initial State) (Empty, State, error) {
 		r, next := initial.NextRune()
@@ -88,11 +90,13 @@ func ConsumeIf(condition func(rune) bool) Parser[Empty] {
 	}
 }
 
+// ConsumeSome consumes runes for as long as the condition holds true. It expects to consume at least one rune.
 func ConsumeSome(condition func(rune) bool) Parser[Empty] {
 	s := StartSkipping(ConsumeIf(condition))
 	return AppendSkipping(s, ConsumeWhile(condition))
 }
 
+// ConsumeWhile consumes runes for as long as the condition holds true. May consume no runes.
 func ConsumeWhile(condition func(rune) bool) Parser[Empty] {
 	return func(initial State) (Empty, State, error) {
 		current := initial
@@ -107,6 +111,7 @@ func ConsumeWhile(condition func(rune) bool) Parser[Empty] {
 	}
 }
 
+// Exactly consumes the given token. If it cans, it returns ErrNoMatch
 func Exactly(token string) Parser[Empty] {
 	return func(initial State) (Empty, State, error) {
 		if !strings.HasPrefix(initial.Remaining(), token) {
@@ -117,6 +122,7 @@ func Exactly(token string) Parser[Empty] {
 	}
 }
 
+// Fail fails parsing with ErrNoMatch
 func Fail[T any](initial State) (T, State, error) {
 	var zero T
 	return zero, initial, ErrNoMatch
@@ -239,6 +245,7 @@ func MapT4[T, U, V, W, A any](parser Parser[Tuple[Tuple[Tuple[Tuple[Empty, T], U
 	}
 }
 
+// OneOf runs all given parsers in order, returns the result of the first parser that doesn't return an error
 func OneOf[T any](parsers ...Parser[T]) Parser[T] {
 	return func(initial State) (T, State, error) {
 		err := ErrNoMatch
@@ -275,6 +282,7 @@ func RepeatWhile[T any](parser Parser[T], predicate func(T) bool) Parser[[]T] {
 	}
 }
 
+// WithLabel wraps the given parsers error messages with the given label
 func WithLabel[T any](p Parser[T], label string) Parser[T] {
 	return func(initial State) (T, State, error) {
 		t, next, err := p(initial)
@@ -333,16 +341,19 @@ func SepBy1[T, A any](p Parser[A], sep Parser[T]) Parser[[]A] {
 	}
 }
 
+// StartKeeping returns a tuple with the result of the given parser
 func StartKeeping[T any](parser Parser[T]) Parser[Tuple[Empty, T]] {
 	return Map(parser, func(t T) Tuple[Empty, T] {
 		return Tuple[Empty, T]{A: empty, B: t}
 	})
 }
 
+// StartSkipping discards the result of the given parser
 func StartSkipping[T any](parser Parser[T]) Parser[Empty] {
 	return Map(parser, func(T) Empty { return empty })
 }
 
+// Succeed returns the given value
 func Succeed[T any](value T) Parser[T] {
 	return func(initial State) (T, State, error) {
 		return value, initial, nil
@@ -361,6 +372,7 @@ func Unpack[T any](parser Parser[Tuple[Empty, T]]) Parser[T] {
 	}
 }
 
+// Unpack2 unpacks level 2 tuple nesting
 func Unpack2[T, U any](parser Parser[Tuple[Tuple[Empty, T], U]]) Parser[Tuple[T, U]] {
 	return func(initial State) (Tuple[T, U], State, error) {
 		val, next, err := parser(initial)
